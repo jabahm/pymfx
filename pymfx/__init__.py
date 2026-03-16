@@ -15,10 +15,12 @@ Quick start:
     # Write
     pymfx.write(mfx, "out.mfx")
 
-    # Compute checksum for a data[] block
-    cs = pymfx.compute_checksum(lines)
+    # Convert
+    geojson = pymfx.convert.to_geojson(mfx)
+    mfx2    = pymfx.convert.from_gpx("flight.gpx")
 """
 
+from . import convert
 from .checksum import compute_checksum, verify_checksum
 from .models import (
     Event,
@@ -41,6 +43,7 @@ __all__ = [
     "write",
     "validate", "ValidationResult", "ValidationIssue",
     "compute_checksum", "verify_checksum",
+    "convert",
     "MfxFile", "Meta", "Trajectory", "TrajectoryPoint",
     "Events", "Event", "Index", "Extension", "SchemaField",
 ]
