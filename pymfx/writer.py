@@ -2,12 +2,11 @@
 pymfx.writer — Serialize a MfxFile object to .mfx v1.0 text format
 """
 from __future__ import annotations
+
 from pathlib import Path
-from typing import Optional
 
-from .models import MfxFile, Meta, Trajectory, Events, Index, Extension, SchemaField
 from .checksum import compute_checksum
-
+from .models import Events, Extension, MfxFile, SchemaField, Trajectory
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -212,7 +211,7 @@ class MfxWriter:
         return "\n".join(lines)
 
 
-def write(mfx: MfxFile, dest: Optional[str | Path] = None,
+def write(mfx: MfxFile, dest: str | Path | None = None,
           compute_checksums: bool = True) -> str:
     """
     Serialize a MfxFile to .mfx text format.

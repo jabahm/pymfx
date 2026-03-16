@@ -2,13 +2,20 @@
 pymfx.parser — Read a .mfx v1.0 file into Python objects
 """
 from __future__ import annotations
+
 import re
 from pathlib import Path
-from typing import Optional
 
 from .models import (
-    MfxFile, Meta, Trajectory, TrajectoryPoint,
-    Events, Event, Index, Extension, SchemaField
+    Event,
+    Events,
+    Extension,
+    Index,
+    Meta,
+    MfxFile,
+    SchemaField,
+    Trajectory,
+    TrajectoryPoint,
 )
 
 
@@ -157,7 +164,7 @@ class MfxParser:
         self._lines = text.splitlines()
         self._pos = 0
 
-    def _current(self) -> Optional[str]:
+    def _current(self) -> str | None:
         while self._pos < len(self._lines):
             raw = self._lines[self._pos]
             stripped = _strip_comment(raw).rstrip()

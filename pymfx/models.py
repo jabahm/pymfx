@@ -2,8 +2,8 @@
 pymfx.models — Dataclasses representing the structure of a .mfx v1.0 file
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
@@ -21,16 +21,16 @@ class Meta:
     license: str
     contact: str
 
-    manufacturer: Optional[str] = None
-    date_end: Optional[str] = None
-    duration_s: Optional[int] = None
+    manufacturer: str | None = None
+    date_end: str | None = None
+    duration_s: int | None = None
     crs: str = "WGS84"
     altitude_ref: str = "MSL"
-    processing_tools: Optional[str] = None
-    producer: Optional[str] = None
-    producer_version: Optional[str] = None
-    source_format: Optional[str] = None
-    source_format_detail: Optional[str] = None
+    processing_tools: str | None = None
+    producer: str | None = None
+    producer_version: str | None = None
+    source_format: str | None = None
+    source_format_detail: str | None = None
 
     # Extra fields not defined in the official schema
     extra: dict = field(default_factory=dict)
@@ -48,29 +48,29 @@ class TrajectoryPoint:
     t: float
     lat: float
     lon: float
-    alt_m: Optional[float] = None
-    speed_ms: Optional[float] = None
-    heading: Optional[float] = None
-    roll: Optional[float] = None
-    pitch: Optional[float] = None
+    alt_m: float | None = None
+    speed_ms: float | None = None
+    heading: float | None = None
+    roll: float | None = None
+    pitch: float | None = None
     extra: dict = field(default_factory=dict)  # additional schema fields
 
 
 @dataclass
 class Trajectory:
-    frequency_hz: Optional[float]
+    frequency_hz: float | None
     schema_fields: list[SchemaField]
     points: list[TrajectoryPoint]
-    checksum: Optional[str] = None  # sha256:<hex>
+    checksum: str | None = None  # sha256:<hex>
     raw_lines: list[str] = field(default_factory=list)  # raw data lines for checksum
 
 
 @dataclass
 class Event:
     t: float
-    type: Optional[str] = None
-    severity: Optional[str] = None
-    detail: Optional[str] = None
+    type: str | None = None
+    severity: str | None = None
+    detail: str | None = None
     extra: dict = field(default_factory=dict)
 
 
@@ -78,14 +78,14 @@ class Event:
 class Events:
     schema_fields: list[SchemaField]
     events: list[Event]
-    checksum: Optional[str] = None
+    checksum: str | None = None
     raw_lines: list[str] = field(default_factory=list)
 
 
 @dataclass
 class Index:
-    bbox: Optional[tuple[float, float, float, float]] = None  # lon_min, lat_min, lon_max, lat_max
-    anomalies: Optional[int] = None
+    bbox: tuple[float, float, float, float] | None = None  # lon_min, lat_min, lon_max, lat_max
+    anomalies: int | None = None
 
 
 @dataclass
@@ -100,6 +100,6 @@ class MfxFile:
     encoding: str
     meta: Meta
     trajectory: Trajectory
-    events: Optional[Events] = None
-    index: Optional[Index] = None
+    events: Events | None = None
+    index: Index | None = None
     extensions: list[Extension] = field(default_factory=list)

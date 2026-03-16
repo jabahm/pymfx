@@ -19,14 +19,21 @@ Quick start:
     cs = pymfx.compute_checksum(lines)
 """
 
-from .parser import parse, ParseError
-from .writer import write
-from .validator import validate, ValidationResult, ValidationIssue
 from .checksum import compute_checksum, verify_checksum
 from .models import (
-    MfxFile, Meta, Trajectory, TrajectoryPoint,
-    Events, Event, Index, Extension, SchemaField
+    Event,
+    Events,
+    Extension,
+    Index,
+    Meta,
+    MfxFile,
+    SchemaField,
+    Trajectory,
+    TrajectoryPoint,
 )
+from .parser import ParseError, parse
+from .validator import ValidationIssue, ValidationResult, validate
+from .writer import write
 
 __version__ = "1.0.0"
 __all__ = [

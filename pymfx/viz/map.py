@@ -9,7 +9,6 @@ from __future__ import annotations
 
 try:
     import folium
-    from folium.plugins import AntPath
 except ImportError as e:
     raise ImportError(
         "folium is required for trajectory maps.\n"
@@ -17,7 +16,6 @@ except ImportError as e:
     ) from e
 
 from ..models import MfxFile
-
 
 # Severity colors for event markers
 _SEVERITY_COLOR = {
@@ -55,7 +53,7 @@ def trajectory_map(
     line_weight: int = 3,
     show_points: bool = True,
     show_events: bool = True,
-) -> "folium.Map":
+) -> folium.Map:
     """
     Build an interactive Leaflet map of the flight trajectory.
 
@@ -99,7 +97,7 @@ def trajectory_map(
     # --- Start / end markers ---
     folium.Marker(
         location=coords[0],
-        tooltip=f"Start — t=0s",
+        tooltip="Start — t=0s",
         icon=folium.Icon(color="green", icon="play", prefix="fa"),
     ).add_to(m)
 

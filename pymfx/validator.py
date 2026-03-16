@@ -4,15 +4,14 @@ pymfx.validator — Validate a .mfx v1.0 file
 Implements rules V01–V21 from the spec.
 """
 from __future__ import annotations
+
 import re
 import uuid as _uuid_mod
-from datetime import datetime
 from dataclasses import dataclass
-from typing import Optional
+from datetime import datetime
 
-from .models import MfxFile
 from .checksum import verify_checksum
-
+from .models import MfxFile
 
 # ---------------------------------------------------------------------------
 # Validation result types
@@ -58,7 +57,7 @@ class ValidationResult:
 # ---------------------------------------------------------------------------
 
 class MfxValidator:
-    def __init__(self, mfx: MfxFile, raw_text: Optional[str] = None):
+    def __init__(self, mfx: MfxFile, raw_text: str | None = None):
         self.mfx = mfx
         self.raw_text = raw_text
         self.issues: list[ValidationIssue] = []
@@ -374,7 +373,7 @@ class MfxValidator:
                 self._warn("V21", "[index] is not the last section of the file")
 
 
-def validate(mfx: MfxFile, raw_text: Optional[str] = None) -> ValidationResult:
+def validate(mfx: MfxFile, raw_text: str | None = None) -> ValidationResult:
     """
     Validate a MfxFile against rules V01–V21.
 

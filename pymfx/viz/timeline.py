@@ -8,8 +8,8 @@ from __future__ import annotations
 
 try:
     import matplotlib
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
+    import matplotlib.pyplot as plt
     from matplotlib.figure import Figure
 except ImportError as e:
     raise ImportError(
@@ -18,7 +18,6 @@ except ImportError as e:
     ) from e
 
 from ..models import MfxFile
-
 
 _SEVERITY_COLOR = {
     "info":     "#1a73e8",

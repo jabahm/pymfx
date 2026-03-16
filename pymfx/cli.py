@@ -10,9 +10,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from .parser import parse, ParseError
-from .validator import validate
 from .checksum import compute_checksum
+from .parser import ParseError, parse
+from .validator import validate
 
 
 def cmd_validate(path: Path) -> int:
@@ -79,7 +79,7 @@ def cmd_info(path: Path) -> int:
     print(f"Location : {m.location}")
     print(f"Sensors  : {m.sensors}")
     t = mfx.trajectory
-    print(f"\n[trajectory]")
+    print("\n[trajectory]")
     print(f"  Points       : {len(t.points)}")
     print(f"  frequency_hz : {t.frequency_hz}")
     if t.points:
@@ -87,7 +87,7 @@ def cmd_info(path: Path) -> int:
     if mfx.events:
         print(f"\n[events]  : {len(mfx.events.events)} event(s)")
     if mfx.index:
-        print(f"\n[index]")
+        print("\n[index]")
         if mfx.index.bbox:
             print(f"  bbox      : {mfx.index.bbox}")
         if mfx.index.anomalies is not None:

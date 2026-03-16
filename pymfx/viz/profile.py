@@ -8,7 +8,6 @@ rendered as gaps rather than zero.
 from __future__ import annotations
 
 try:
-    import matplotlib
     import matplotlib.pyplot as plt
     import matplotlib.ticker as ticker
     from matplotlib.figure import Figure
@@ -19,7 +18,6 @@ except ImportError as e:
     ) from e
 
 from ..models import MfxFile
-
 
 # Default style constants
 _LINE_COLOR   = "#1a73e8"
@@ -121,7 +119,7 @@ def flight_profile(
 
         ax.set_ylabel(label, fontsize=_FONT_LABEL)
         ax.grid(True, alpha=_GRID_ALPHA, linestyle=":")
-        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter(f"%.1f"))
+        ax.yaxis.set_major_formatter(ticker.FormatStrFormatter("%.1f"))
         ax.spines[["top", "right"]].set_visible(False)
 
         # Overlay events
