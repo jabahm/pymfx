@@ -6,18 +6,12 @@ with the full trajectory duration as a background bar.
 """
 from __future__ import annotations
 
-try:
-    import matplotlib
-    import matplotlib.patches as mpatches
-    import matplotlib.pyplot as plt
-    from matplotlib.figure import Figure
-except ImportError as e:
-    raise ImportError(
-        "matplotlib is required for event timelines.\n"
-        "Install it with: pip install pymfx[viz]  or  pip install matplotlib"
-    ) from e
+from typing import TYPE_CHECKING
 
 from ..models import MfxFile
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 _SEVERITY_COLOR = {
     "info":     "#1a73e8",
@@ -61,6 +55,16 @@ def events_timeline(
         fig.savefig("timeline.png", dpi=150)
         plt.show()
     """
+    try:
+        import matplotlib
+        import matplotlib.patches as mpatches
+        import matplotlib.pyplot as plt
+    except ImportError as exc:
+        raise ImportError(
+            "matplotlib is required for event timelines.\n"
+            "Install it with: pip install pymfx[viz]  or  pip install matplotlib"
+        ) from exc
+
     if not mfx.events or not mfx.events.events:
         raise ValueError("No events to display.")
 

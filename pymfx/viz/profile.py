@@ -7,17 +7,12 @@ rendered as gaps rather than zero.
 """
 from __future__ import annotations
 
-try:
-    import matplotlib.pyplot as plt
-    import matplotlib.ticker as ticker
-    from matplotlib.figure import Figure
-except ImportError as e:
-    raise ImportError(
-        "matplotlib is required for flight profiles.\n"
-        "Install it with: pip install pymfx[viz]  or  pip install matplotlib"
-    ) from e
+from typing import TYPE_CHECKING
 
 from ..models import MfxFile
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 # Default style constants
 _LINE_COLOR   = "#1a73e8"
@@ -53,6 +48,15 @@ def flight_profile(
         fig.savefig("profile.png", dpi=150)
         plt.show()
     """
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.ticker as ticker
+    except ImportError as exc:
+        raise ImportError(
+            "matplotlib is required for flight profiles.\n"
+            "Install it with: pip install pymfx[viz]  or  pip install matplotlib"
+        ) from exc
+
     points = mfx.trajectory.points
     if not points:
         raise ValueError("No trajectory points to display.")

@@ -17,7 +17,11 @@ from .validator import validate
 
 def cmd_validate(path: Path) -> int:
     """Validate a .mfx file and print issues."""
-    raw_text = path.read_text(encoding='utf-8')
+    try:
+        raw_text = path.read_text(encoding='utf-8')
+    except UnicodeDecodeError as e:
+        print(f"✗ File encoding error (expected UTF-8): {e}", file=sys.stderr)
+        return 1
     try:
         mfx = parse(raw_text)
     except ParseError as e:
@@ -31,7 +35,11 @@ def cmd_validate(path: Path) -> int:
 
 def cmd_checksum(path: Path) -> int:
     """Compute and display SHA-256 checksums for all data[] blocks in a .mfx file."""
-    raw_text = path.read_text(encoding='utf-8')
+    try:
+        raw_text = path.read_text(encoding='utf-8')
+    except UnicodeDecodeError as e:
+        print(f"✗ File encoding error (expected UTF-8): {e}", file=sys.stderr)
+        return 1
     try:
         mfx = parse(raw_text)
     except ParseError as e:
@@ -58,7 +66,11 @@ def cmd_checksum(path: Path) -> int:
 
 def cmd_info(path: Path) -> int:
     """Print a summary of a .mfx file."""
-    raw_text = path.read_text(encoding='utf-8')
+    try:
+        raw_text = path.read_text(encoding='utf-8')
+    except UnicodeDecodeError as e:
+        print(f"✗ File encoding error (expected UTF-8): {e}", file=sys.stderr)
+        return 1
     try:
         mfx = parse(raw_text)
     except ParseError as e:
@@ -101,7 +113,14 @@ def cmd_info(path: Path) -> int:
 def main():
     parser = argparse.ArgumentParser(
         prog='pymfx',
-        description='Read, validate and manage .mfx v1.0 mission files'
+        description='Read, validate and manage .mfx v1.0 mission files',
+        epilog=(
+            'Examples:\n'
+            '  pymfx flight.mfx --validate\n'
+            '  pymfx flight.mfx --info\n'
+            '  pymfx flight.mfx --checksum'
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument('file', type=Path, help='.mfx file to process')
     group = parser.add_mutually_exclusive_group(required=True)

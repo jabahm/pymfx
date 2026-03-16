@@ -113,10 +113,19 @@ class MfxValidator:
             if not verify_checksum(ev.raw_lines, ev.checksum):
                 self._err("V03", f"[events] checksum mismatch. Declared: {ev.checksum}")
 
-    # V04 — [meta] present and in first position
+    # V04 — [meta] present and required fields are non-empty
     def _v04(self):
-        if self.mfx.meta is None:
-            self._err("V04", "Missing [meta] section")
+        # Note: parser raises ParseError before MfxFile is built if [meta] is absent,
+        # so mfx.meta is never None here. We use V04 to catch empty required fields.
+        required_fields = [
+            'id', 'drone_id', 'drone_type', 'pilot_id', 'date_start',
+            'status', 'application', 'location', 'data_level', 'license', 'contact',
+        ]
+        meta = self.mfx.meta
+        for fname in required_fields:
+            val = getattr(meta, fname, None)
+            if val is None or (isinstance(val, str) and not val.strip()):
+                self._err("V04", f"Required [meta] field '{fname}' is empty or missing")
 
     # V05 — [trajectory] present
     def _v05(self):
@@ -331,6 +340,9 @@ class MfxValidator:
         traj = self.mfx.trajectory
         if traj.frequency_hz is None or len(traj.points) < 2:
             return
+        if traj.frequency_hz <= 0:
+            self._warn("V18", f"frequency_hz={traj.frequency_hz} is not positive (must be > 0)")
+            return
         ts = [p.t for p in traj.points if p.t is not None]
         if len(ts) < 2:
             return
@@ -339,10 +351,9 @@ class MfxValidator:
             return
         measured_hz = (len(ts) - 1) / total_time
         declared_hz = traj.frequency_hz
-        if declared_hz > 0:
-            ratio = abs(measured_hz - declared_hz) / declared_hz
-            if ratio > 0.20:
-                self._warn("V18", f"frequency_hz declared={declared_hz} Hz, measured≈{measured_hz:.2f} Hz (gap {ratio*100:.0f}% > 20%)")
+        ratio = abs(measured_hz - declared_hz) / declared_hz
+        if ratio > 0.20:
+            self._warn("V18", f"frequency_hz declared={declared_hz} Hz, measured≈{measured_hz:.2f} Hz (gap {ratio*100:.0f}% > 20%)")
 
     # V19 — anomalies in [index] matches the actual count
     def _v19(self):

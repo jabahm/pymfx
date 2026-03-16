@@ -7,15 +7,12 @@ Events are shown as markers with popups.
 """
 from __future__ import annotations
 
-try:
-    import folium
-except ImportError as e:
-    raise ImportError(
-        "folium is required for trajectory maps.\n"
-        "Install it with: pip install pymfx[viz]  or  pip install folium"
-    ) from e
+from typing import TYPE_CHECKING
 
 from ..models import MfxFile
+
+if TYPE_CHECKING:
+    import folium
 
 # Severity colors for event markers
 _SEVERITY_COLOR = {
@@ -71,6 +68,14 @@ def trajectory_map(
         m = pymfx.viz.trajectory_map(mfx)
         m.save("flight.html")
     """
+    try:
+        import folium
+    except ImportError as exc:
+        raise ImportError(
+            "folium is required for trajectory maps.\n"
+            "Install it with: pip install pymfx[viz]  or  pip install folium"
+        ) from exc
+
     points = mfx.trajectory.points
     if not points:
         raise ValueError("No trajectory points to display.")
@@ -129,10 +134,12 @@ def trajectory_map(
     # --- Event markers ---
     if show_events and mfx.events:
         for e in mfx.events.events:
-            # Find the closest trajectory point by time
+            if e.t is None:
+                continue
+            # Find the closest trajectory point by time (skip points with no lat or t)
             closest = min(
-                (p for p in points if p.lat is not None),
-                key=lambda p: abs(p.t - e.t),
+                (p for p in points if p.lat is not None and p.t is not None),
+                key=lambda p: abs(p.t - e.t),  # type: ignore[operator]
                 default=None,
             )
             if closest is None:

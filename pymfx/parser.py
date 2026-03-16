@@ -28,13 +28,22 @@ class ParseError(Exception):
 # ---------------------------------------------------------------------------
 
 def _strip_comment(line: str) -> str:
-    """Remove inline comments (# ...) except inside quoted strings."""
+    """Remove inline comments (# ...) except inside quoted strings.
+
+    Handles escaped quotes (\") and both double-quote delimiters.
+    """
     in_quote = False
-    for i, ch in enumerate(line):
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if ch == '\\' and in_quote:
+            i += 2  # skip escaped character inside a string
+            continue
         if ch == '"':
             in_quote = not in_quote
         if ch == '#' and not in_quote:
             return line[:i].rstrip()
+        i += 1
     return line
 
 
@@ -145,9 +154,19 @@ def _cast_field(value: str, field: SchemaField):
     v = value.strip()
     t = field.type.lower()
     if t in ('float', 'float32'):
-        return float(v)
+        try:
+            return float(v)
+        except ValueError:
+            raise ParseError(
+                f"Cannot cast value {v!r} to float for field '{field.name}'"
+            )
     if t == 'int':
-        return int(v)
+        try:
+            return int(v)
+        except ValueError:
+            raise ParseError(
+                f"Cannot cast value {v!r} to int for field '{field.name}'"
+            )
     if t == 'bool':
         return v.lower() == 'true'
     if v.startswith('"') and v.endswith('"'):
@@ -437,17 +456,31 @@ def parse(source: str | Path) -> MfxFile:
     Parse a .mfx file from a file path or raw string.
 
     Args:
-        source: path to the file, or raw text content
+        source: path to the file (str or Path), or raw .mfx text content
 
     Returns:
         MfxFile — complete object representation of the file
+
+    Raises:
+        ParseError: if the file cannot be decoded as UTF-8 or has invalid content
     """
-    if isinstance(source, Path) or (isinstance(source, str) and '\n' not in source and len(source) < 500):
-        path = Path(source)
-        if path.exists():
-            text = path.read_text(encoding='utf-8')
+    if isinstance(source, Path):
+        try:
+            text = source.read_text(encoding='utf-8')
+        except UnicodeDecodeError as exc:
+            raise ParseError(f"File is not valid UTF-8: {source}") from exc
+    elif isinstance(source, str):
+        # Treat as a file path only when there are no newlines AND the path exists.
+        # This avoids the fragile len<500 heuristic that could misinterpret long
+        # paths as raw content or short raw content as a path.
+        candidate = Path(source)
+        if '\n' not in source and candidate.exists():
+            try:
+                text = candidate.read_text(encoding='utf-8')
+            except UnicodeDecodeError as exc:
+                raise ParseError(f"File is not valid UTF-8: {candidate}") from exc
         else:
             text = source
     else:
-        text = source
+        raise TypeError(f"parse() expects str or Path, got {type(source).__name__!r}")
     return MfxParser(text).parse()
