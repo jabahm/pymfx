@@ -55,11 +55,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/pymfx/pymfx"
-Documentation = "https://github.com/pymfx/pymfx"
-Repository = "https://github.com/pymfx/pymfx"
-Changelog = "https://github.com/pymfx/pymfx/blob/main/CHANGELOG.md"
-"Bug Tracker" = "https://github.com/pymfx/pymfx/issues"
+Homepage = "https://github.com/jabahm/pymfx"
+Documentation = "https://github.com/jabahm/pymfx"
+Repository = "https://github.com/jabahm/pymfx"
+Changelog = "https://github.com/jabahm/pymfx/blob/main/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/jabahm/pymfx/issues"
 
 [project.scripts]
 pymfx = "pymfx.cli:main"

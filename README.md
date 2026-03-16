@@ -16,7 +16,7 @@ pip install pymfx
 Or from source:
 
 ```bash
-git clone https://github.com/pymfx/pymfx
+git clone https://github.com/jabahm/pymfx
 cd pymfx
 pip install -e .
 ```
