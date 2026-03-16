@@ -1,0 +1,49 @@
+@mfx 1.0
+@encoding UTF-8
+
+[meta]
+id                   : uuid:550e8400-e29b-41d4-a716-446655440000
+drone_id             : Parrot-Anafi-SN987654
+drone_type           : multirotor
+manufacturer         : Parrot
+pilot_id             : FR-PILOT-0099
+date_start           : 2026-03-16T08:30:00Z
+date_end             : 2026-03-16T09:12:45Z
+duration_s           : 2565
+status               : complete
+application          : infrastructure_inspection
+location             : Lyon, France
+crs                  : WGS84
+altitude_ref         : MSL
+sensors              : [rgb]
+data_level           : raw
+processing_tools     : none
+producer             : pymfx
+producer_version     : 1.0.0
+source_format        : native
+license              : CC-BY-4.0
+contact              : pilot@lab.fr
+
+[trajectory]
+frequency_hz : 5
+@checksum sha256:170ea4832decfa295ff39849e518672fa0b92fb224f8304965eac4892085f546
+
+@schema point: {t:float [no_null], lat:float [range=-90..90, no_null], lon:float [range=-180..180, no_null], alt_m:float32 [range=0..10000], speed_ms:float32 [range=0..200]}
+
+data[]:
+0.000 | 45.7640 | 4.8357 | 0.0 | 0.0
+0.200 | 45.7640 | 4.8357 | 1.2 | 1.5
+0.400 | 45.7641 | 4.8358 | 4.8 | 4.2
+
+[events]
+@checksum sha256:70b564abc93a37e7ed38c0b1d77469d35bea8aff7dfc7ce1619b0048f66efcce
+
+@schema event: {t:float [no_null], type:str [enum=[takeoff,landing,waypoint,anomaly,rtl,abort]], severity:str [enum=[info,warning,critical]], detail:str}
+
+data[]:
+0.000 | takeoff | info | nominal
+2565.000 | landing | info | nominal
+
+[index]
+bbox      : (4.8357,45.7640,4.8358,45.7641)
+anomalies : 0

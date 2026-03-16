@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include requirements.txt
+recursive-include pymfx *.py
+recursive-include tests *.py *.mfx
+recursive-include notebooks *.ipynb
