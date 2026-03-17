@@ -31,7 +31,14 @@ jobs:
         run: ruff check pymfx/
 
       - name: Test
-        run: pytest --cov=pymfx --cov-report=term-missing
+        run: pytest --cov=pymfx --cov-report=term-missing --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
 
   publish:
     needs: test

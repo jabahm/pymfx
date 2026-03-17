@@ -1,0 +1,47 @@
+site_name: pymfx
+site_description: Python library for the Mission Flight Exchange (.mfx) v1.0 format
+site_url: https://jabahm.github.io/pymfx
+repo_url: https://github.com/jabahm/pymfx
+repo_name: jabahm/pymfx
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Quick start: quickstart.md
+  - API reference: api.md
+  - CLI: cli.md
+  - Changelog: CHANGELOG.md
+  - Contributing: CONTRIBUTING.md
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - admonition
+  - tables
+  - toc:
+      permalink: true

@@ -47,6 +47,9 @@ notebooks = [
     "matplotlib>=3.7",
     "pandas>=1.5",
 ]
+docs = [
+    "mkdocs-material>=9.0",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
@@ -61,7 +64,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/jabahm/pymfx"
-Documentation = "https://github.com/jabahm/pymfx"
+Documentation = "https://jabahm.github.io/pymfx"
 Repository = "https://github.com/jabahm/pymfx"
 Changelog = "https://github.com/jabahm/pymfx/blob/main/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/jabahm/pymfx/issues"
