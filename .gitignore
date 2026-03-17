@@ -25,6 +25,14 @@ htmlcov/
 
 # Jupyter
 .ipynb_checkpoints/
+notebooks/*.html
+notebooks/*.png
+notebooks/*.gpx
+notebooks/*.kml
+notebooks/*.geojson
+notebooks/*.csv
+notebooks/*.mfx
+notebooks/*.json
 
 # Editors
 .vscode/
