@@ -10,6 +10,7 @@ build/
 *.whl
 *.tar.gz
 MANIFEST
+poetry.lock
 
 # Virtual environments
 .venv/
