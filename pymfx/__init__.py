@@ -33,10 +33,18 @@ Quick start:
     combined  = pymfx.merge(leg1, leg2)    # concatenate two flights
     delta     = pymfx.diff(mfx1, mfx2)    # compare two flights
     print(delta)
+
+    # FAIR compliance scoring (Section 5 of the .mfx paper)
+    score = pymfx.fair_score(mfx)         # uniform weights α=β=γ=δ=¼
+    print(score.S)                         # composite score in [0, 1]
+    print(score.breakdown())               # per-criterion detail table
+    # Custom weights:
+    score = pymfx.fair_score(mfx, alpha=0.4, beta=0.2, gamma=0.2, delta=0.2)
 """
 
 from . import convert
 from .checksum import compute_checksum, verify_checksum
+from .fair import FairScore, fair_score
 from .models import (
     Event,
     Events,
@@ -63,6 +71,7 @@ __all__ = [
     "convert",
     "flight_stats", "FlightStats",
     "generate_index", "merge", "diff", "DiffResult",
+    "fair_score", "FairScore",
     "MfxFile", "Meta", "Trajectory", "TrajectoryPoint",
     "Events", "Event", "Index", "Extension", "SchemaField",
 ]

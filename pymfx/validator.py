@@ -119,12 +119,12 @@ class MfxValidator:
         # so mfx.meta is never None here. We use V04 to catch empty required fields.
         required_fields = [
             'id', 'drone_id', 'drone_type', 'pilot_id', 'date_start',
-            'status', 'application', 'location', 'data_level', 'license', 'contact',
+            'status', 'application', 'location', 'sensors', 'data_level', 'license', 'contact',
         ]
         meta = self.mfx.meta
         for fname in required_fields:
             val = getattr(meta, fname, None)
-            if val is None or (isinstance(val, str) and not val.strip()):
+            if val is None or (isinstance(val, str) and not val.strip()) or (isinstance(val, list) and len(val) == 0):
                 self._err("V04", f"Required [meta] field '{fname}' is empty or missing")
 
     # V05 — [trajectory] present

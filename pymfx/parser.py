@@ -273,16 +273,18 @@ class MfxParser:
 
     def _parse_meta(self) -> Meta:
         kv = self._parse_kv_block()
-        sensors = kv.pop('sensors', [])
-        if isinstance(sensors, str):
-            sensors = [sensors]
 
+        # Check required fields before popping any key
         required = ['id', 'drone_id', 'drone_type', 'pilot_id',
                     'date_start', 'status', 'application', 'location',
-                    'data_level', 'license', 'contact']
+                    'sensors', 'data_level', 'license', 'contact']
         for r in required:
             if r not in kv:
                 raise ParseError(f"Missing required field in [meta]: {r}")
+
+        sensors = kv.pop('sensors', [])
+        if isinstance(sensors, str):
+            sensors = [sensors]
 
         known = {
             'id', 'drone_id', 'drone_type', 'manufacturer', 'pilot_id',
