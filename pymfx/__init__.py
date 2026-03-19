@@ -34,6 +34,12 @@ Quick start:
     delta     = pymfx.diff(mfx1, mfx2)    # compare two flights
     print(delta)
 
+    # Anomaly detection
+    report = pymfx.detect_anomalies(mfx)
+    print(report)                          # summary table
+    report = pymfx.detect_anomalies(mfx, inject_events=True)  # in-place inject
+    pymfx.write(mfx, "repaired.mfx")
+
     # FAIR compliance scoring (Section 5 of the .mfx paper)
     score = pymfx.fair_score(mfx)         # uniform weights α=β=γ=δ=¼
     print(score.S)                         # composite score in [0, 1]
@@ -43,6 +49,7 @@ Quick start:
 """
 
 from . import convert
+from .anomaly import Anomaly, AnomalyReport, detect_anomalies
 from .checksum import compute_checksum, verify_checksum
 from .fair import FairScore, fair_score
 from .models import (
@@ -71,6 +78,7 @@ __all__ = [
     "convert",
     "flight_stats", "FlightStats",
     "generate_index", "merge", "diff", "DiffResult", "crop", "split", "split_on_events",
+    "detect_anomalies", "AnomalyReport", "Anomaly",
     "fair_score", "FairScore",
     "MfxFile", "Meta", "Trajectory", "TrajectoryPoint",
     "Events", "Event", "Index", "Extension", "SchemaField",

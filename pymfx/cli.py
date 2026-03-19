@@ -17,6 +17,8 @@ Usage:
     pymfx points.csv --import csv  -o flight.mfx
     pymfx log.csv    --import dji  -o flight.mfx
     pymfx flight.mfx --repair -o fixed.mfx
+    pymfx flight.mfx --anomalies
+    pymfx flight.mfx --anomalies -o fixed.mfx
 """
 import argparse
 import sys
@@ -27,6 +29,7 @@ from .convert import to_csv, to_geojson, to_gpx, to_kml
 from .fair import fair_score
 from .parser import ParseError, parse
 from .stats import flight_stats
+from .anomaly import detect_anomalies
 from .utils import diff, generate_index
 from .validator import validate
 from .writer import write
@@ -223,6 +226,32 @@ def cmd_export(path: Path, fmt: str, output: Path | None) -> int:
     return 0
 
 
+def cmd_anomalies(path: Path, output: Path | None) -> int:
+    """Detect trajectory anomalies; optionally inject events and save."""
+    try:
+        raw_text = path.read_text(encoding='utf-8')
+    except UnicodeDecodeError as e:
+        print(f"✗ File encoding error (expected UTF-8): {e}", file=sys.stderr)
+        return 1
+    try:
+        mfx = parse(raw_text)
+    except ParseError as e:
+        print(f"✗ Parse error: {e}", file=sys.stderr)
+        return 1
+
+    inject = output is not None
+    report = detect_anomalies(mfx, inject_events=inject)
+
+    print(str(report))
+
+    if inject:
+        result = write(mfx, compute_checksums=True)
+        output.write_text(result, encoding='utf-8')
+        print(f"\n✓ {report.count} anomaly event(s) injected → {output}", file=sys.stderr)
+
+    return 0 if report.count == 0 else 1
+
+
 def cmd_import(path: Path, fmt: str, output: Path | None) -> int:
     """Convert a GPX / GeoJSON / CSV / DJI-CSV file into a .mfx file."""
     from .convert import from_csv, from_dji_csv, from_geojson, from_gpx
@@ -332,7 +361,9 @@ def main():
             '  pymfx track.gpx  --import gpx  -o flight.mfx\n'
             '  pymfx points.csv --import csv  -o flight.mfx\n'
             '  pymfx log.csv    --import dji  -o flight.mfx\n'
-            '  pymfx flight.mfx --repair -o fixed.mfx'
+            '  pymfx flight.mfx --repair -o fixed.mfx\n'
+            '  pymfx flight.mfx --anomalies\n'
+            '  pymfx flight.mfx --anomalies -o fixed.mfx'
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -361,6 +392,9 @@ def main():
                        help=f'Import from another format into .mfx: {", ".join(_IMPORT_FORMATS)}')
     group.add_argument('--repair', action='store_true',
                        help='Recompute SHA-256 checksums and regenerate [index] (writes in-place if no -o)')
+    group.add_argument('--anomalies', action='store_true',
+                       help='Detect speed spikes, GPS jumps and altitude cliffs; '
+                            'with -o injects anomaly events and saves')
 
     args = parser.parse_args()
 
@@ -389,6 +423,8 @@ def main():
         sys.exit(cmd_import(args.file, args.import_fmt, args.output))
     elif args.repair:
         sys.exit(cmd_repair(args.file, args.output))
+    elif args.anomalies:
+        sys.exit(cmd_anomalies(args.file, args.output))
 
 
 if __name__ == '__main__':
