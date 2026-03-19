@@ -1,5 +1,5 @@
 """
-pymfx — Python library for the Mission Flight Exchange (.mfx) v1.0 format
+pymfx - Python library for the Mission Flight Exchange (.mfx) v1.0 format
 
 Quick start:
 
@@ -58,7 +58,7 @@ from .models import (
 )
 from .parser import ParseError, parse
 from .stats import FlightStats, flight_stats
-from .utils import DiffResult, diff, generate_index, merge
+from .utils import DiffResult, crop, diff, generate_index, merge, split, split_on_events
 from .validator import ValidationIssue, ValidationResult, validate
 from .writer import write
 
@@ -70,7 +70,7 @@ __all__ = [
     "compute_checksum", "verify_checksum",
     "convert",
     "flight_stats", "FlightStats",
-    "generate_index", "merge", "diff", "DiffResult",
+    "generate_index", "merge", "diff", "DiffResult", "crop", "split", "split_on_events",
     "fair_score", "FairScore",
     "MfxFile", "Meta", "Trajectory", "TrajectoryPoint",
     "Events", "Event", "Index", "Extension", "SchemaField",

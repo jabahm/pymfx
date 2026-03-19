@@ -1,5 +1,5 @@
 """
-Tests for pymfx.utils — generate_index, merge, diff, DiffResult
+Tests for pymfx.utils - generate_index, merge, diff, DiffResult, crop, split, split_on_events
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from pymfx.models import (
     Trajectory,
     TrajectoryPoint,
 )
-from pymfx.utils import DiffResult, diff, generate_index, merge
+from pymfx.utils import DiffResult, crop, diff, generate_index, merge, split, split_on_events
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -374,3 +374,180 @@ class TestDiffStr:
         s = str(diff(_make_mfx(drone_id="ALPHA"), _make_mfx(drone_id="BETA")))
         assert "ALPHA" in s
         assert "BETA" in s
+
+
+# ===========================================================================
+# crop
+# ===========================================================================
+
+class TestCrop:
+    def test_full_range(self):
+        mfx = _make_mfx(n=10, with_events=True)
+        result = crop(mfx)
+        assert len(result.trajectory.points) == 10
+
+    def test_t_end_only(self):
+        mfx = _make_mfx(n=10)
+        result = crop(mfx, t_end=4.0)
+        ts = [p.t for p in result.trajectory.points]
+        assert max(ts) <= 4.0
+        assert len(ts) == 5  # t=0,1,2,3,4
+
+    def test_t_start_only(self):
+        mfx = _make_mfx(n=10)
+        result = crop(mfx, t_start=5.0)
+        ts = [p.t for p in result.trajectory.points]
+        assert min(ts) >= 5.0
+        assert len(ts) == 5  # t=5,6,7,8,9
+
+    def test_window(self):
+        mfx = _make_mfx(n=10)
+        result = crop(mfx, t_start=2.0, t_end=5.0)
+        ts = [p.t for p in result.trajectory.points]
+        assert ts == [2.0, 3.0, 4.0, 5.0]
+
+    def test_events_filtered(self):
+        mfx = _make_mfx(n=10, with_events=True)
+        result = crop(mfx, t_end=2.0)
+        # events are at t=1.0 and t=3.0; only t=1.0 should survive
+        assert result.events is not None
+        ev_ts = [e.t for e in result.events.events]
+        assert 1.0 in ev_ts
+        assert 3.0 not in ev_ts
+
+    def test_new_uuid(self):
+        mfx = _make_mfx(n=5)
+        result = crop(mfx)
+        assert result.meta.id != mfx.meta.id
+
+    def test_duration_s_updated(self):
+        mfx = _make_mfx(n=6)  # t=0..5
+        result = crop(mfx, t_start=1.0, t_end=4.0)
+        assert result.meta.duration_s == pytest.approx(3.0)
+
+    def test_empty_result(self):
+        mfx = _make_mfx(n=5)
+        result = crop(mfx, t_start=100.0)
+        assert len(result.trajectory.points) == 0
+
+    def test_original_unchanged(self):
+        mfx = _make_mfx(n=10)
+        n_orig = len(mfx.trajectory.points)
+        crop(mfx, t_end=3.0)
+        assert len(mfx.trajectory.points) == n_orig
+
+    def test_no_events_source(self):
+        mfx = _make_mfx(n=5, with_events=False)
+        result = crop(mfx, t_end=2.0)
+        assert result.events is None
+
+
+# ===========================================================================
+# split
+# ===========================================================================
+
+class TestSplit:
+    def test_n1_returns_full(self):
+        mfx = _make_mfx(n=9)
+        segs = split(mfx, n=1)
+        assert len(segs) == 1
+        assert len(segs[0].trajectory.points) == 9
+
+    def test_n3_count(self):
+        mfx = _make_mfx(n=9)  # t=0..8
+        segs = split(mfx, n=3)
+        assert len(segs) == 3
+
+    def test_n3_cover_all_points(self):
+        mfx = _make_mfx(n=9)
+        segs = split(mfx, n=3)
+        total = sum(len(s.trajectory.points) for s in segs)
+        assert total == 9
+
+    def test_last_segment_has_final_point(self):
+        mfx = _make_mfx(n=10)
+        segs = split(mfx, n=3)
+        last_t = mfx.trajectory.points[-1].t
+        last_seg_ts = [p.t for p in segs[-1].trajectory.points]
+        assert last_t in last_seg_ts
+
+    def test_unique_uuids(self):
+        mfx = _make_mfx(n=6)
+        segs = split(mfx, n=3)
+        ids = [s.meta.id for s in segs]
+        assert len(set(ids)) == 3
+
+    def test_invalid_n(self):
+        mfx = _make_mfx(n=5)
+        with pytest.raises(ValueError):
+            split(mfx, n=0)
+
+    def test_empty_trajectory(self):
+        mfx = _make_mfx(n=0)
+        with pytest.raises(ValueError):
+            split(mfx, n=2)
+
+    def test_events_distributed(self):
+        mfx = _make_mfx(n=10, with_events=True)
+        segs = split(mfx, n=2)
+        ev_counts = [len(s.events.events) if s.events else 0 for s in segs]
+        assert sum(ev_counts) == 2  # 2 events total
+
+
+# ===========================================================================
+# split_on_events
+# ===========================================================================
+
+class TestSplitOnEvents:
+    def _mfx_with_waypoints(self):
+        """10 points (t=0..9), waypoints at t=3 and t=7."""
+        mfx = _make_mfx(n=10)
+        ev_schema = [
+            SchemaField("t",    "float", ["no_null"]),
+            SchemaField("type", "str"),
+        ]
+        mfx.events = Events(
+            schema_fields=ev_schema,
+            events=[
+                Event(t=3.0, type="waypoint"),
+                Event(t=7.0, type="waypoint"),
+                Event(t=5.0, type="photo"),
+            ],
+        )
+        return mfx
+
+    def test_returns_k_plus_1_segments(self):
+        mfx = self._mfx_with_waypoints()
+        segs = split_on_events(mfx, event_type="waypoint")
+        assert len(segs) == 3  # before 3, 3-7, after 7
+
+    def test_no_events_returns_full(self):
+        mfx = _make_mfx(n=5, with_events=False)
+        segs = split_on_events(mfx, event_type="waypoint")
+        assert len(segs) == 1
+        assert len(segs[0].trajectory.points) == 5
+
+    def test_no_matching_events(self):
+        mfx = _make_mfx(n=5, with_events=True)
+        segs = split_on_events(mfx, event_type="nonexistent")
+        assert len(segs) == 1
+
+    def test_all_points_covered(self):
+        mfx = self._mfx_with_waypoints()
+        segs = split_on_events(mfx, event_type="waypoint")
+        total = sum(len(s.trajectory.points) for s in segs)
+        assert total == 10
+
+    def test_unique_uuids(self):
+        mfx = self._mfx_with_waypoints()
+        segs = split_on_events(mfx, event_type="waypoint")
+        ids = [s.meta.id for s in segs]
+        assert len(set(ids)) == len(segs)
+
+    def test_non_waypoint_events_stay_in_segment(self):
+        mfx = self._mfx_with_waypoints()
+        segs = split_on_events(mfx, event_type="waypoint")
+        # photo at t=5 should be in middle segment (3 < 5 <= 7)
+        mid = segs[1]
+        ev_types = [e.type for e in mid.events.events]
+        assert "photo" in ev_types

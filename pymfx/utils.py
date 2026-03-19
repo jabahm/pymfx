@@ -6,6 +6,9 @@ Functions
 generate_index   Compute an :class:`~pymfx.Index` from trajectory/events data.
 merge            Concatenate two flights in temporal order.
 diff             Compare two MfxFile objects and return a :class:`DiffResult`.
+crop             Extract a time-window sub-flight from a MfxFile.
+split            Split a MfxFile into N equal-duration segments.
+split_on_events  Split a MfxFile at each occurrence of a given event type.
 """
 from __future__ import annotations
 
@@ -334,3 +337,189 @@ def diff(mfx1: MfxFile, mfx2: MfxFile) -> DiffResult:
         event_count_1=ev1,
         event_count_2=ev2,
     )
+
+
+# ---------------------------------------------------------------------------
+# _make_segment  (internal helper)
+# ---------------------------------------------------------------------------
+
+def _make_segment(
+    mfx: MfxFile,
+    pts: list[TrajectoryPoint],
+    evs: list[Event],
+) -> MfxFile:
+    """Build a new MfxFile from a filtered slice of points and events."""
+    meta = copy.deepcopy(mfx.meta)
+    meta.id = f"uuid:{uuid.uuid4()}"
+
+    # Update duration_s from actual point range
+    if pts:
+        meta.duration_s = round(pts[-1].t - pts[0].t, 3)
+
+    traj = Trajectory(
+        frequency_hz=mfx.trajectory.frequency_hz,
+        schema_fields=list(mfx.trajectory.schema_fields),
+        points=pts,
+    )
+
+    events: Events | None = None
+    if mfx.events is not None:
+        events = Events(
+            schema_fields=list(mfx.events.schema_fields),
+            events=evs,
+        )
+
+    return MfxFile(
+        version=mfx.version,
+        encoding=mfx.encoding,
+        meta=meta,
+        trajectory=traj,
+        events=events,
+    )
+
+
+# ---------------------------------------------------------------------------
+# crop
+# ---------------------------------------------------------------------------
+
+def crop(
+    mfx: MfxFile,
+    t_start: float | None = None,
+    t_end: float | None = None,
+) -> MfxFile:
+    """Extract a time-window sub-flight from a :class:`~pymfx.MfxFile`.
+
+    Selects all trajectory points (and matching events) where
+    ``t_start <= t <= t_end``.  Either bound can be ``None`` to mean
+    "from the beginning" or "to the end".
+
+    Args:
+        mfx:     source flight
+        t_start: start of the window in seconds (inclusive, default: first t)
+        t_end:   end of the window in seconds (inclusive, default: last t)
+
+    Returns:
+        A new :class:`~pymfx.MfxFile` with a fresh UUID and updated
+        ``meta.duration_s``.
+
+    Example::
+
+        # Keep only the first 60 seconds
+        segment = pymfx.crop(mfx, t_end=60.0)
+
+        # Keep seconds 30 to 120
+        segment = pymfx.crop(mfx, t_start=30.0, t_end=120.0)
+    """
+    lo = t_start if t_start is not None else float("-inf")
+    hi = t_end if t_end is not None else float("inf")
+
+    pts = [p for p in mfx.trajectory.points if lo <= p.t <= hi]
+    evs = [e for e in (mfx.events.events if mfx.events else []) if lo <= e.t <= hi]
+
+    return _make_segment(mfx, pts, evs)
+
+
+# ---------------------------------------------------------------------------
+# split
+# ---------------------------------------------------------------------------
+
+def split(mfx: MfxFile, n: int) -> list[MfxFile]:
+    """Split a :class:`~pymfx.MfxFile` into *n* equal-duration segments.
+
+    The total t-range is divided into *n* equal-width windows and
+    :func:`crop` is applied for each window.  The last segment always
+    includes the final point (avoids floating-point edge exclusion).
+
+    Args:
+        mfx: source flight
+        n:   number of segments (must be >= 1)
+
+    Returns:
+        List of *n* new :class:`~pymfx.MfxFile` objects.
+
+    Raises:
+        ValueError: if *n* < 1 or the trajectory is empty.
+
+    Example::
+
+        thirds = pymfx.split(mfx, n=3)
+        for i, seg in enumerate(thirds):
+            pymfx.write(seg, f"segment_{i+1}.mfx")
+    """
+    if n < 1:
+        raise ValueError(f"n must be >= 1, got {n}")
+    pts = mfx.trajectory.points
+    if not pts:
+        raise ValueError("trajectory is empty — nothing to split")
+
+    t0 = pts[0].t
+    t_last = pts[-1].t
+    window = (t_last - t0) / n
+
+    segments = []
+    for i in range(n):
+        lo = t0 + i * window
+        hi = t0 + (i + 1) * window
+        # Last segment uses hi=inf so the final point is always included
+        seg_pts = [p for p in pts if lo <= p.t <= hi] if i < n - 1 else \
+                  [p for p in pts if p.t >= lo]
+        seg_evs = [e for e in (mfx.events.events if mfx.events else [])
+                   if lo <= e.t <= hi] if i < n - 1 else \
+                  [e for e in (mfx.events.events if mfx.events else [])
+                   if e.t >= lo]
+        segments.append(_make_segment(mfx, seg_pts, seg_evs))
+
+    return segments
+
+
+# ---------------------------------------------------------------------------
+# split_on_events
+# ---------------------------------------------------------------------------
+
+def split_on_events(mfx: MfxFile, event_type: str) -> list[MfxFile]:
+    """Split a :class:`~pymfx.MfxFile` at each event of a given type.
+
+    Creates one segment per gap between consecutive matching events.
+    For *k* matching events there will be *k + 1* segments (including
+    the prefix before the first event and the suffix after the last).
+    Empty segments (no trajectory points) are silently dropped.
+
+    Args:
+        mfx:        source flight
+        event_type: event ``type`` string to split on (e.g. ``"waypoint"``)
+
+    Returns:
+        List of :class:`~pymfx.MfxFile` segments.
+
+    Example::
+
+        # Split into per-leg segments at each "waypoint" event
+        legs = pymfx.split_on_events(mfx, event_type="waypoint")
+    """
+    if not mfx.events:
+        return [crop(mfx)]
+
+    boundaries = sorted(
+        e.t for e in mfx.events.events if e.type == event_type
+    )
+
+    pts = mfx.trajectory.points
+    if not pts:
+        return []
+
+    t_lo = float("-inf")
+    segments = []
+    for boundary in boundaries:
+        seg_pts = [p for p in pts if t_lo < p.t <= boundary]
+        seg_evs = [e for e in mfx.events.events if t_lo < e.t <= boundary]
+        if seg_pts:
+            segments.append(_make_segment(mfx, seg_pts, seg_evs))
+        t_lo = boundary
+
+    # Final segment: after last boundary
+    seg_pts = [p for p in pts if p.t > t_lo]
+    seg_evs = [e for e in mfx.events.events if e.t > t_lo]
+    if seg_pts:
+        segments.append(_make_segment(mfx, seg_pts, seg_evs))
+
+    return segments
