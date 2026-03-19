@@ -26,7 +26,6 @@ from dataclasses import dataclass, field
 from .checksum import verify_checksum
 from .models import MfxFile
 
-
 # ---------------------------------------------------------------------------
 # Result dataclass
 # ---------------------------------------------------------------------------
@@ -49,7 +48,7 @@ class FairScore:
     """
     F: float
     A: float
-    I: float
+    interop: float
     R: float
     S: float
     alpha: float
@@ -94,7 +93,7 @@ class FairScore:
             lines.append("")
 
         score_line = (
-            f"  F={self.F:.2f}  A={self.A:.2f}  I={self.I:.2f}  R={self.R:.2f}"
+            f"  F={self.F:.2f}  A={self.A:.2f}  I={self.interop:.2f}  R={self.R:.2f}"
             f"   →  S₀ = {self.S:.2f}"
         )
         lines.append("-" * 60)
@@ -104,7 +103,7 @@ class FairScore:
     def __str__(self) -> str:
         return (
             f"FairScore(F={self.F:.2f}, A={self.A:.2f}, "
-            f"I={self.I:.2f}, R={self.R:.2f}, S={self.S:.2f})"
+            f"I={self.interop:.2f}, R={self.R:.2f}, S={self.S:.2f})"
         )
 
 
@@ -240,7 +239,7 @@ def fair_score(
         details["schema_present"], details["crs_declared"],
         details["sensors_vocab"], details["altitude_ref_declared"],
     ])
-    I = i_earned / 25.0
+    interop = i_earned / 25.0
 
     # ------------------------------------------------------------------
     # R — Reusability (25 pts total)
@@ -273,12 +272,12 @@ def fair_score(
     # ------------------------------------------------------------------
     # Composite score
     # ------------------------------------------------------------------
-    S = alpha * F + beta * A + gamma * I + delta * R
+    S = alpha * F + beta * A + gamma * interop + delta * R
 
     return FairScore(
         F=round(F, 4),
         A=round(A, 4),
-        I=round(I, 4),
+        interop=round(interop, 4),
         R=round(R, 4),
         S=round(S, 4),
         alpha=alpha,
