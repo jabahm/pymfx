@@ -6,10 +6,12 @@ Usage:
     pymfx flight.mfx --checksum
     pymfx flight.mfx --info
     pymfx flight.mfx --stats
+    pymfx flight.mfx --fair
     pymfx flight.mfx --export geojson
     pymfx flight.mfx --export gpx -o flight.gpx
     pymfx flight.mfx --export kml  -o flight.kml
     pymfx flight.mfx --export csv  -o flight.csv
+    pymfx flight.mfx --export json -o flight.json
 """
 import argparse
 import sys
@@ -17,12 +19,13 @@ from pathlib import Path
 
 from .checksum import compute_checksum
 from .convert import to_csv, to_geojson, to_gpx, to_kml
+from .fair import fair_score
 from .parser import ParseError, parse
 from .stats import flight_stats
 from .utils import diff
 from .validator import validate
 
-_EXPORT_FORMATS = ("geojson", "gpx", "kml", "csv")
+_EXPORT_FORMATS = ("geojson", "gpx", "kml", "csv", "json")
 
 
 def cmd_validate(path: Path) -> int:
@@ -120,6 +123,26 @@ def cmd_info(path: Path) -> int:
     return 0
 
 
+def cmd_fair(path: Path) -> int:
+    """Print FAIR score for a .mfx file."""
+    try:
+        raw_text = path.read_text(encoding='utf-8')
+    except UnicodeDecodeError as e:
+        print(f"✗ File encoding error (expected UTF-8): {e}", file=sys.stderr)
+        return 1
+    try:
+        mfx = parse(raw_text)
+    except ParseError as e:
+        print(f"✗ Parse error: {e}", file=sys.stderr)
+        return 1
+
+    score = fair_score(mfx)
+    print(f"S = {score.S:.2f}  (F={score.F:.2f}  A={score.A:.2f}  I={score.interop:.2f}  R={score.R:.2f})")
+    print()
+    print(score.breakdown())
+    return 0
+
+
 def cmd_stats(path: Path) -> int:
     """Print aggregated flight statistics for a .mfx file."""
     try:
@@ -174,13 +197,16 @@ def cmd_export(path: Path, fmt: str, output: Path | None) -> int:
         print(f"✗ Parse error: {e}", file=sys.stderr)
         return 1
 
-    converters = {
-        "geojson": to_geojson,
-        "gpx":     to_gpx,
-        "kml":     to_kml,
-        "csv":     to_csv,
-    }
-    result = converters[fmt](mfx)
+    if fmt == "json":
+        result = mfx.to_json()
+    else:
+        converters = {
+            "geojson": to_geojson,
+            "gpx":     to_gpx,
+            "kml":     to_kml,
+            "csv":     to_csv,
+        }
+        result = converters[fmt](mfx)
 
     if output:
         output.write_text(result, encoding='utf-8')
@@ -199,10 +225,12 @@ def main():
             '  pymfx flight.mfx --validate\n'
             '  pymfx flight.mfx --info\n'
             '  pymfx flight.mfx --stats\n'
+            '  pymfx flight.mfx --fair\n'
             '  pymfx flight.mfx --checksum\n'
             '  pymfx flight.mfx --diff other.mfx\n'
             '  pymfx flight.mfx --export geojson\n'
-            '  pymfx flight.mfx --export gpx -o flight.gpx'
+            '  pymfx flight.mfx --export gpx -o flight.gpx\n'
+            '  pymfx flight.mfx --export json -o flight.json'
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -218,6 +246,8 @@ def main():
                        help='Print a summary of the file')
     group.add_argument('--stats', action='store_true',
                        help='Print aggregated flight statistics')
+    group.add_argument('--fair', action='store_true',
+                       help='Print FAIR score (Findable / Accessible / Interoperable / Reusable)')
     group.add_argument('--diff', type=Path, metavar='FILE2',
                        help='Compare with FILE2 and print structured differences')
     group.add_argument('--export', choices=_EXPORT_FORMATS, metavar='FORMAT',
@@ -237,6 +267,8 @@ def main():
         sys.exit(cmd_info(args.file))
     elif args.stats:
         sys.exit(cmd_stats(args.file))
+    elif args.fair:
+        sys.exit(cmd_fair(args.file))
     elif args.diff:
         sys.exit(cmd_diff(args.file, args.diff))
     elif args.export:
