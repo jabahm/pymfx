@@ -9,123 +9,85 @@
 Python library for the **Mission Flight Exchange** (`.mfx`) format — an open plain-text format for UAV mission data built for [FAIR](https://www.go-fair.org/fair-principles/) compliance.
 
 ```bash
-pip install pymfx          # core (zero dependencies)
-pip install pymfx[viz]     # + folium maps & matplotlib plots
-pip install pymfx[ds]      # + pandas DataFrame integration
+pip install pymfx            # core (zero runtime dependencies)
+pip install pymfx[viz]       # + folium maps & matplotlib plots
+pip install pymfx[ds]        # + pandas DataFrame integration
+pip install pymfx[tui]       # + interactive terminal viewer
 ```
 
 ---
 
-## Parse · Validate · Stats · FAIR
+## Package
+
+Parse, validate, score, detect anomalies and write `.mfx` files from Python — zero runtime dependencies.
 
 ```python
 import pymfx
 
 mfx = pymfx.parse("flight.mfx")
 
-pymfx.validate(mfx)
-```
-```
-✓ Valid file - no issues found.
-```
+# Validate (V01–V21 rules)
+result = pymfx.validate(mfx)
+print(result)
+# ✓ Valid file - no issues found.
 
-```python
-print(pymfx.flight_stats(mfx))
-```
-```
-┌──────────────────────────────────────────┐
-│  Flight Statistics                        │
-├──────────────────────────────────────────┤
-│  Points        : 320                    │
-│  Duration      : 319.0 s                │
-│  Distance      : 2450.27 m              │
-│  Distance (km) : 2.450                  │
-├──────────────────────────────────────────┤
-│  Alt max       : 55.6 m                 │
-│  Alt min       : 0.0 m                  │
-│  Alt mean      : 47.3 m                 │
-├──────────────────────────────────────────┤
-│  Speed max     : 11.3 m/s               │
-│  Speed mean    : 8.1 m/s                │
-└──────────────────────────────────────────┘
-```
+# Flight statistics
+stats = pymfx.flight_stats(mfx)
+print(stats)
+# Points: 320  Duration: 319.0 s  Distance: 2 450 m
+# Alt  max/min/mean: 55.6 / 0.0 / 47.3 m
+# Speed max/mean:    11.3 / 8.1 m/s
 
-```python
+# FAIR compliance score
 score = pymfx.fair_score(mfx)
 print(f"S = {score.S:.2f}  (F={score.F:.2f} A={score.A:.2f} I={score.interop:.2f} R={score.R:.2f})")
-print(score.breakdown())
+# S = 1.00  (F=1.00 A=1.00 I=1.00 R=1.00)
+
+# Anomaly detection
+report = pymfx.detect_anomalies(mfx)
+print(report)
+# 2 anomaly(ies) found
+#   t=42.000  speed_spike   warning   Z=4.12 (8× above mean)
+#   t=87.000  altitude_cliff  warning  Δalt/Δt=32.1 m/s
+
+# Write back (auto-computes SHA-256 checksums)
+pymfx.write(mfx, "out.mfx")
 ```
-```
-S = 1.00  (F=1.00 A=1.00 I=1.00 R=1.00)
 
-Criterion                                      Pts  Max  Pass
-------------------------------------------------------------
-  F  id is a valid UUID                         10   10  ✓
-  F  [index] bbox present                        8    8  ✓
-  F  [meta] is first section                     7    7  ✓
-
-  A  license present and SPDX-valid             10   10  ✓
-  A  contact present                             8    8  ✓
-  A  status declared                             7    7  ✓
-
-  I  @schema present in [trajectory]             8    8  ✓
-  I  crs declared                                7    7  ✓
-  I  sensors from controlled vocabulary          5    5  ✓
-  I  altitude_ref declared                       5    5  ✓
-
-  R  @checksum valid in [trajectory]             8    8  ✓
-  R  data_level declared                         7    7  ✓
-  R  producer + producer_version                 5    5  ✓
-  R  source_format declared                      5    5  ✓
-
-------------------------------------------------------------
-  F=1.00  A=1.00  I=1.00  R=1.00   →  S₀ = 1.00
-```
+### Convert
 
 ```python
-pymfx.write(mfx, "out.mfx")  # auto-computes SHA-256 checksums
-```
-
----
-
-## Visualize
-
-```python
-import pymfx.viz as viz
-
-viz.trajectory_map(mfx)       # interactive folium map (green → red gradient)
-viz.speed_heatmap(mfx)        # map coloured by speed
-viz.compare_map([mfx1, mfx2]) # multi-flight overlay
-viz.flight_profile(mfx)       # altitude / speed / heading over time
-viz.flight_3d(mfx)            # 3-D lat/lon/alt trajectory
-viz.events_timeline(mfx)      # events on the flight timeline
-```
-
-![flight profile](docs/img/flight_profile.png)
-
-![events timeline](docs/img/events_timeline.png)
-
-![3D trajectory](docs/img/flight_3d.png)
-
----
-
-## Convert
-
-```python
-mfx = pymfx.convert.from_dji_csv("DJIFlightRecord.csv")  # AirData or DJI Fly
+# Import from common formats
+mfx = pymfx.convert.from_dji_csv("DJIFlightRecord.csv")   # AirData or DJI Fly
 mfx = pymfx.convert.from_gpx("track.gpx")
 mfx = pymfx.convert.from_geojson("route.geojson")
 mfx = pymfx.convert.from_csv("points.csv")
 
-pymfx.convert.to_geojson(mfx)  # → GeoJSON FeatureCollection
-pymfx.convert.to_gpx(mfx)      # → GPX 1.1
-pymfx.convert.to_kml(mfx)      # → KML (Google Earth)
-pymfx.convert.to_csv(mfx)      # → CSV
+# Export
+pymfx.convert.to_geojson(mfx)    # → GeoJSON FeatureCollection
+pymfx.convert.to_gpx(mfx)        # → GPX 1.1
+pymfx.convert.to_kml(mfx)        # → KML (Google Earth)
+pymfx.convert.to_csv(mfx)        # → CSV
 ```
 
----
+### Visualize (`pymfx[viz]`)
 
-## DataFrame
+```python
+import pymfx.viz as viz
+
+viz.trajectory_map(mfx)        # interactive folium map (speed gradient)
+viz.speed_heatmap(mfx)         # map coloured by speed
+viz.compare_map([mfx1, mfx2])  # multi-flight overlay
+viz.flight_profile(mfx)        # altitude / speed / heading over time
+viz.flight_3d(mfx)             # 3-D lat/lon/alt trajectory
+viz.events_timeline(mfx)       # events on the flight timeline
+```
+
+![flight profile](docs/img/flight_profile.png)
+
+![3D trajectory](docs/img/flight_3d.png)
+
+### DataFrame (`pymfx[ds]`)
 
 ```python
 df = mfx.trajectory.to_dataframe(events=mfx.events)
@@ -136,28 +98,99 @@ df = mfx.trajectory.to_dataframe(events=mfx.events)
     1.0  48.7733  2.2859     2.5       2.4     takeoff
    22.0  48.7733  2.2880    54.6       8.9    waypoint
   120.0  48.7739  2.2898    48.3       9.3       photo
-  180.0  48.7741  2.2878    46.2       8.2       photo
   319.0  48.7733  2.2858     0.0       1.2     landing
 ```
 
 ---
 
-## CLI
+## TUI
+
+An interactive terminal viewer for `.mfx` files. Explore meta, trajectory, events, statistics, anomalies and raw source — all from the keyboard.
 
 ```bash
+pip install pymfx[tui]
+pymfx flight.mfx --tui
+```
+
+Six tabs, all keyboard-driven:
+
+| Key | Tab |
+|-----|-----|
+| `1` | **Overview** — meta fields, key stats, altitude & speed sparklines, validation status |
+| `2` | **Trajectory** — full point table with speed colour gradient |
+| `3` | **Events** — event log with type/severity colour coding |
+| `4` | **Statistics** — full FlightStats (std dev, coverage %) + FAIR criterion breakdown |
+| `5` | **Anomalies** — speed spikes, GPS jumps, altitude cliffs |
+| `6` | **Raw** — source file with line numbers |
+| `e` | **Export** — save as GeoJSON / GPX / KML / CSV |
+
+![TUI Overview](docs/img/tui_overview.svg)
+
+![TUI Trajectory](docs/img/tui_trajectory.svg)
+
+![TUI Events](docs/img/tui_events.svg)
+
+---
+
+## CLI
+
+Single-command inspection directly from the terminal — no Python required after install.
+
+```bash
+# Validate against all V01–V21 rules
 pymfx flight.mfx --validate
-pymfx flight.mfx --stats
+# ✓ Valid  —  0 errors, 2 warnings
+#   ⚠ V11  altitude value 62.3 above recommended range
+#   ⚠ V18  frequency gap detected at t=42.0 (> 20 % threshold)
+
+# Flight summary
 pymfx flight.mfx --info
+# id       : uuid:f47ac10b-...
+# drone    : DJI-Mini3-SN8273  (multirotor)
+# pilot    : pilot:ahmed-jabrane
+# date     : 2025-06-15T08:30:00Z
+# status   : complete
+# location : Parc de Sceaux, FR
+# points   : 320   duration: 319.0 s
+
+# Detailed statistics
+pymfx flight.mfx --stats
+# Points     : 320        Freq  : 1.0 Hz
+# Duration   : 319.0 s    Dist  : 2450.3 m
+# Alt  max   : 55.6 m     Speed max  : 11.3 m/s
+# Alt  mean  : 47.3 m     Speed mean :  8.1 m/s
+
+# Verify SHA-256 checksum
 pymfx flight.mfx --checksum
-pymfx flight.mfx --diff other.mfx
+# ✓ Checksum valid
+
+# Detect anomalies (--output saves injected events)
+pymfx flight.mfx --anomalies
+pymfx flight.mfx --anomalies -o fixed.mfx
+
+# Compare two flights
+pymfx a.mfx --diff b.mfx
+
+# Export to another format
 pymfx flight.mfx --export geojson -o out.geojson
+pymfx flight.mfx --export gpx     -o out.gpx
+pymfx flight.mfx --export kml     -o out.kml
+pymfx flight.mfx --export csv     -o out.csv
+
+# Import from common formats
+pymfx track.gpx  --import gpx     -o flight.mfx
+pymfx log.csv    --import dji     -o flight.mfx
+pymfx data.csv   --import csv     -o flight.mfx
+
+# Repair (recompute checksum + rebuild index)
+pymfx flight.mfx --repair -o fixed.mfx
 ```
 
 ---
 
 ## The .mfx format
 
-Plain text, structured sections, human-readable:
+Plain text, structured sections, human-readable and diff-friendly:
 
 ```
 @mfx 1.0
