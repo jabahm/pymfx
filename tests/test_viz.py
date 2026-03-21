@@ -1,4 +1,4 @@
-"""Tests for pymfx.viz — trajectory_map, flight_profile, events_timeline"""
+"""Tests for pymfx.viz - trajectory_map, flight_profile, events_timeline"""
 import sys
 import math
 import uuid
@@ -8,7 +8,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
 import matplotlib
+import matplotlib.pyplot
 matplotlib.use("Agg")  # non-interactive backend for CI
+
+
+@pytest.fixture(autouse=True)
+def close_figures():
+    """Close all matplotlib figures after each test to prevent memory leaks."""
+    yield
+    matplotlib.pyplot.close("all")
 
 from pymfx.models import (
     MfxFile, Meta, Trajectory, TrajectoryPoint, SchemaField,

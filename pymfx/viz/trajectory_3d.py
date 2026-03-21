@@ -75,7 +75,6 @@ def flight_3d(
     lats = [p.lat for p in points]
     alts_f = [a if a is not None else 0.0 for a in alts]
 
-    plt.close("all")
     fig = plt.figure(figsize=figsize, dpi=dpi)
     ax = fig.add_subplot(111, projection="3d")
 

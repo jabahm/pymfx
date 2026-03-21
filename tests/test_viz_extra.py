@@ -10,11 +10,19 @@ import uuid
 from pathlib import Path
 
 import matplotlib
+import matplotlib.pyplot
 import pytest
 
 matplotlib.use("Agg")
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+
+@pytest.fixture(autouse=True)
+def close_figures():
+    """Close all matplotlib figures after each test to prevent memory leaks."""
+    yield
+    matplotlib.pyplot.close("all")
 
 from pymfx.models import (
     Event,
