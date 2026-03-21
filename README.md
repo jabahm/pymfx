@@ -5,7 +5,7 @@
 [![Coverage](https://codecov.io/gh/jabahm/pymfx/branch/main/graph/badge.svg)](https://codecov.io/gh/jabahm/pymfx)
 [![Docs](https://img.shields.io/badge/docs-jabahm.github.io%2Fpymfx-blue)](https://jabahm.github.io/pymfx)
 
-Python library for the [Mission Flight Exchange](https://github.com/jabahm/pymfx) `.mfx` format.
+Parse, validate, analyse and convert UAV mission data using the open [`.mfx`](https://github.com/jabahm/pymfx) format — plain text, self-describing, FAIR-compliant, single file per flight.
 
 ```bash
 pip install pymfx

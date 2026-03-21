@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pymfx"
 version = "1.0.0"
-description = "Python library for the Mission Flight Exchange (.mfx) v1.0 format"
+description = "Parse, validate, analyse and convert UAV mission data in the open .mfx (Mission Flight Exchange) format"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
